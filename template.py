@@ -1,14 +1,13 @@
 # Credit card digits detector - https://github.com/alexcamargoweb/creditcard-orc-opencv.
 # Reconhecimento de dígitos de um cartão de crédito utilizando Python e OpenCV.
 # Adrian Rosebrock, Credit card OCR with OpenCV and Python. PyImageSearch.
-# Disponível em: https://www.pyimagesearch.com/2019/03/11/liveness-detection-with-opencv/.
+# Disponível em: https://www.pyimagesearch.com/2017/07/17/credit-card-ocr-with-opencv-and-python/.
 # Acessado em: 29/03/2021.
 # Arquivo: template.py
 # Execução via PyCharm/Linux (Python 3.8)
 # $ conda activate python_ocr
 
 # importa os pacotes necessários
-
 from imutils import contours
 import numpy as np
 import imutils
@@ -25,11 +24,12 @@ FIRST_NUMBER = {
     "5": "MasterCard",
     "6": "Discover Card"
 }
+
 # carrega a imagem OCR-A de referência
 ref = cv2.imread(REFERENCE)
-# converte para escala de cinza
+# converte a imagem para escala de cinza
 ref = cv2.cvtColor(ref, cv2.COLOR_BGR2GRAY)
-# converte os dígitos em branco e fundo em preto
+# converte os dígitos da imagem em branco e fundo em preto
 ref = cv2.threshold(ref, 10, 255, cv2.THRESH_BINARY_INV)[1]
 
 # busca as bordas da imagem OCR-A (bordas dos dígitos)
@@ -61,32 +61,25 @@ image = imutils.resize(image, width = 300)
 # converte para escala de cinza
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-# apply a tophat (whitehat) morphological operator to find light
-# regions against a dark background (i.e., the credit card numbers)
-
 # aplica um operador morfológico tophat (whitehat) para encontrar a luz
 # de regiões contra um fundo escuro (ou seja, os números do cartão de crédito)
 tophat = cv2.morphologyEx(gray, cv2.MORPH_TOPHAT, rectKernel)
 
 # processa o gradiente Scharr do tophat da imagem
-gradX = cv2.Sobel(tophat, ddepth=cv2.CV_32F, dx=1, dy=0, ksize=-1)
+gradX = cv2.Sobel(tophat, ddepth = cv2.CV_32F, dx = 1, dy = 0, ksize = -1)
 gradX = np.absolute(gradX)
 (minVal, maxVal) = (np.min(gradX), np.max(gradX))
-# reescala o resto para num intervalo de [0, 255]
+# reescala o resto da imagem para num intervalo de [0, 255]
 gradX = (255 * ((gradX - minVal) / (maxVal - minVal)))
 gradX = gradX.astype("uint8")
 
-# apply a closing operation using the rectangular kernel to help
-# cloes gaps in between credit card number digits, then apply
-# Otsu's thresholding method to binarize the image
-
 # aplica uma operação de fechamento usando o kernel retangular para ajudar
-# a fechar as lacunas entre os dígitos do número do cartão de crédito e
+# a fechar as lacunas entre os dígitos do número do cartão de crédito
 gradX = cv2.morphologyEx(gradX, cv2.MORPH_CLOSE, rectKernel)
 # aplica o método de limiar de Otsu para binarizar a imagem
 thresh = cv2.threshold(gradX, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 # aplica uma segunda operação de fechamento à imagem binária, novamente
-# para ajudar a fechar lacunas entre as regiões de número de cartão de crédito
+# para ajudar a fechar lacunas entre as regiões de número do cartão de crédito
 thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, sqKernel)
 
 # encontra os contornos de limite na imagem
@@ -110,18 +103,15 @@ for (i, c) in enumerate(cnts):
             locs.append((x, y, w, h))
 
 # ordena a localização dos dígitos da esquerda para a direita
-locs = sorted(locs, key=lambda x: x[0])
-# inicializa a lista de dígitos classificados
+locs = sorted(locs, key = lambda x:x[0])
+# inicializa a lista dos dígitos classificados
 output = []
 
 # faz um loop sobre os 4 grupos de 4 dígitos
 for (i, (gX, gY, gW, gH)) in enumerate(locs):
     # inicializa a lista do grupo de 4 dígitos
     groupOutput = []
-    # extract the group ROI of 4 digits from the grayscale image,
-    # then apply thresholding to segment the digits from the
-    # background of the credit card
-    # extrai o ROI do grupo de 4 dígitos da imagem em escala de cinza
+    # extrai o ROI do grupo de 4 dígitos da imagem (escala de cinza)
     group = gray[gY - 5:gY + gH + 5, gX - 5:gX + gW + 5]
     # aplica o limite para segmentar os dígitos do fundo do cartão de crédito
     group = cv2.threshold(group, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
@@ -144,7 +134,7 @@ for (i, (gX, gY, gW, gH)) in enumerate(locs):
 
         # faz um loop sobre o dígito de referência e o ROI do dígito
         for (digit, digitROI) in digits.items():
-            # aplica uma correlação baseada na correspondência do template
+            # aplica uma correlação baseada no template
             result = cv2.matchTemplate(roi, digitROI, cv2.TM_CCOEFF)
             # pega o score
             (_, score, _, _) = cv2.minMaxLoc(result)
@@ -152,10 +142,10 @@ for (i, (gX, gY, gW, gH)) in enumerate(locs):
             scores.append(score)
 
         # a classificação para o ROI é a referência
-        # do dígito com maior score correspondente ao template
+        # do dígito com maior score no template
         groupOutput.append(str(np.argmax(scores)))
 
-        # desenha a classificação dos dígitos ao redor do grupo
+        # desenha a classificação dos dígitos acima do grupo
         cv2.rectangle(image, (gX - 5, gY - 5),
                       (gX + gW + 5, gY + gH + 5), (0, 0, 255), 2)
         cv2.putText(image, "".join(groupOutput), (gX, gY - 15),
@@ -164,7 +154,7 @@ for (i, (gX, gY, gW, gH)) in enumerate(locs):
     # atualiza a lista dos dígitos de output
     output.extend(groupOutput)
 
-# display the output credit card information to the screen
+# exibe as informações do cartão de crédito na tela
 print("Bandeira: {}".format(FIRST_NUMBER[output[0]]))
 print("Número: {}".format("".join(output)))
 cv2.imshow("Credit card digits detector", image)
