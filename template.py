@@ -17,7 +17,7 @@ import cv2
 IMAGE = './inputs/5.png'
 # imagem OCR-A de referência (dígitos de 0 a 9)
 REFERENCE = './reference/ocr_a_reference.png'
-# define um dicionário para mapear o primeiro dígito do cartão
+# dicionário para mapear o primeiro dígito do cartão
 FIRST_NUMBER = {
     "3": "American Express",
     "4": "Visa",
